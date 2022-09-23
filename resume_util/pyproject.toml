@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "resume-util"
+version = "0.1.0"
+description = ""
+authors = ["Mai1902 <nguyendacm@allegheny.edu>"]
+readme = "README.md"
+packages = [{include = "resume_util"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+bs4 = "^0.0.1"
+
+
+[tool.poetry.group.dev.dependencies]
+requests = "^2.28.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
