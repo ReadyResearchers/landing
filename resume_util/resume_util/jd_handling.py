@@ -15,7 +15,7 @@ def get_important_content():
     df = load(path)[0]
     im_df = pd.DataFrame(df, columns = ['company', 'employment', 'jobdescription', 'jobtitle', 'skills'])
     im_dict = fh.load_data_dictionary(im_df)
-    return im_dict
+    return im_dict, im_df
 
 '''Load all job description into a list'''
 def get_jd_content():
