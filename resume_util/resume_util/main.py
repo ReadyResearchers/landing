@@ -1,6 +1,5 @@
 import jd_handling as jd
 import file_handling as fh
-from landing.resume_util.resume_util.file_handling import load_data_other
 import text_mining as tm
 import pandas as pd
 
@@ -53,11 +52,3 @@ def main():
 
 if '__name__' == '__main__':
     main()
-
-    
-
-
-
-
-
-

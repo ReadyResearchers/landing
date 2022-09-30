@@ -8,9 +8,11 @@ from spacy.util import filter_spans
 from collections import Counter
 from gensim.summarization import keywords
 from gensim.summarization.summarizer import summarize
+import en_core_web_sm
+
  
 # Load spaCy trained pipeline for english
-master = spacy.load("en_core_web_sm")
+master = en_core_web_sm.load()
 
 '''Return lemmatized text for better handling later'''
 def lemmatization(text):
