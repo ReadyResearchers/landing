@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import re
 
 def load_job():
-    with open('data/jobtitle.txt') as f:
+    with open('resume_util/data/jobtitle.txt') as f:
         job_title = f.read().replace('\n', '')
         return job_title
 
@@ -22,10 +22,10 @@ def get_record(card):
     job_id = a_tag.get("id")  # job id
     job_title = a_tag.get("aria-label")  # job title
     job_url = 'https://www.indeed.com' + a_tag.get('href')  # job url
-    company_name =   # company name
-    job_loc =   # job location
-    job_summary =  # job description
-    job_salary =  # job salaries
+    company_name =  0 # company name
+    job_loc =   0# job location
+    job_summary = 0 # job description
+    job_salary =  0# job salaries
 
     record = (job_id, job_title, job_loc, job_summary, job_salary, job_url, company_name)
 
@@ -60,3 +60,6 @@ def main():
         job = job.replace(' ', '%20')
         record = get_jobs(job)
     print(record)
+
+if __name__ == '__main__':
+    main()
