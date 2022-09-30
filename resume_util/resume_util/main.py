@@ -10,7 +10,7 @@ def get_resume_content(path):
     return content
 
 '''Calculate the similarity and return a list of a certain amount of job with highest score'''
-def get_top_similarity(resume_content, jd_content_list, amount, im_dict):
+def get_top_similarity(resume_content, jd_content_list, amount, im_df):
     max = 0
     max_id = 0
     rank = 1
@@ -30,7 +30,29 @@ def get_top_similarity(resume_content, jd_content_list, amount, im_dict):
         amount -= 1
         rank += 1
     
-    for key, values in im_dict.items()
+    top_df = pd.DataFrame(top_dict)
+    im_df = im_df.reset_index()
+    im_df_rs = pd.DataFrame()
+
+    for index, row in im_df.iterrows():
+        for id in id_list:
+            if id == index:
+                im_df_rs = im_df_rs.append(row, ignore_index = True)
+
+    frames = [top_df,im_df_rs]
+    result_df = pd.concat(frames)
+    return result_df
+
+def main():
+    im_df = jd.get_important_content()[1]
+    jd_content_list = jd.get_jd_content()
+    resume_path = 'data/Mai Nguyen_September 2022_SWE ver-2.pdf'
+    resume_content = get_resume_content(resume_path)
+    result_df = get_top_similarity(resume_content, jd_content_list, 3, im_df)
+    print(result_df)
+
+if '__name__' == '__main__':
+    main()
 
     
 

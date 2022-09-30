@@ -19,6 +19,6 @@ def get_important_content():
 
 '''Load all job description into a list'''
 def get_jd_content():
-    im_dict = get_important_content()
+    im_dict = get_important_content()[0]
     jd_content = [x for x in im_dict['jobdescription']]
     return jd_content
