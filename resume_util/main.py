@@ -43,12 +43,13 @@ def get_top_similarity(resume_content, jd_content_list, amount, im_df):
     return result_df
 
 def main():
-    im_df = jd.get_important_content()[1]
+    df = jd.load()
+    im_df = jd.get_important_content(df)[1]
     jd_content_list = jd.get_jd_content()
-    resume_path = 'data/Mai Nguyen_September 2022_SWE ver-2.pdf'
+    resume_path = 'landing/data/Sample Resume.pdf'
     resume_content = get_resume_content(resume_path)
     result_df = get_top_similarity(resume_content, jd_content_list, 3, im_df)
     print(result_df)
 
-if '__name__' == '__main__':
+if __name__ == '__main__':
     main()

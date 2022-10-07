@@ -6,7 +6,8 @@ import PyPDF2
 def check_path(path):
     if os.path.exists(path):
         return True
-    return False
+    else:
+        return False
 
 '''Load into data frame for visualization'''
 def load_data_csv(path):

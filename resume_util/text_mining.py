@@ -6,10 +6,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from spacy.matcher import PhraseMatcher, Matcher
 from spacy.util import filter_spans
 from collections import Counter
-from gensim.summarization import keywords
-from gensim.summarization.summarizer import summarize
+from rake_nltk import Rake
 import en_core_web_sm
-
  
 # Load spaCy trained pipeline for english
 master = en_core_web_sm.load()
@@ -33,7 +31,7 @@ def tokenizer(text):
     token_list =[]
 
     # Strip off unwanted punctuation
-    for token in lemmatized_text:
+    for token in pre_processed:
         if token.is_stop is False:
             token_list.append(token)
 
@@ -85,8 +83,9 @@ def similarity_caculator(text_resume, text_jd):
 "Compute the phrase matching for raw text in resume and jd"
 def keyword_matching(text_resume, text_jd):
     # Generate matcher pattern by extracting keywords from job description
+    rake = Rake()
     matcher = PhraseMatcher(master.vocab)
-    jd_keyword = keywords(text_jd, ratio = 0.25).split('\n')
+    jd_keyword = rake.extract_keywords_from_text(text_resume)
     jd_keyword_count = Counter(jd_keyword)
     patterns = [master.make_doc(k) for k in jd_keyword]
     matcher.add("Spec", patterns) 

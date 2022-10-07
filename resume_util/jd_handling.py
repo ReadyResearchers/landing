@@ -1,18 +1,20 @@
 import file_handling as fh
 import pandas as pd
+import os 
 
-path = 'data/dice_job_techjob_post.csv'
+source_file = r'/Users/m/Senior_project/landing/resume_util/data/dice_com_techjob_post.csv'
+os.chdir(source_file)
+#path = os.path.join(os.getcwd(), source_file)
 
 '''Load the job data file and return data frame and dictionary of data'''
-def load(path):
-    if fh.check_path(path):
-        df = fh.load_data_csv(path)
-        df_dict = fh.load_data_dictionary(df)
+def load():
+    print(source_file)
+    df = fh.load_data_csv(source_file)
+    df_dict = fh.load_data_dictionary(df)
     return df, df_dict
 
 '''Load important content in the input file and store in a dictionary'''
-def get_important_content():
-    df = load(path)[0]
+def get_important_content(df):
     im_df = pd.DataFrame(df, columns = ['company', 'employment', 'jobdescription', 'jobtitle', 'skills'])
     im_dict = fh.load_data_dictionary(im_df)
     return im_dict, im_df
