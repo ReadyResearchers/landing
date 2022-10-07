@@ -6,6 +6,7 @@ authors = ["Mai1902 <nguyendacm@allegheny.edu>"]
 readme = "README.md"
 packages = [{include = "resume_util"}]
 
+
 [tool.poetry.dependencies]
 python = "^3.9"
 bs4 = "^0.0.1"
@@ -13,8 +14,10 @@ pandas = "^1.5.0"
 PyPDF2 = "^2.11.0"
 spacy = "^3.4.1"
 sklearn = "^0.0"
-gensim = "^4.2.0"
 resume-parser = "^0.8.4"
+gensim = "^4.2.0"
+rake-nltk = "^1.0.6"
+en-core-web-sm = {url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl"}
 
 
 [tool.poetry.dev-dependencies]
