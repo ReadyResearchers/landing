@@ -8,6 +8,7 @@ from spacy.util import filter_spans
 from collections import Counter
 from rake_nltk import Rake
 import en_core_web_sm
+import pandas
  
 # Load spaCy trained pipeline for english
 master = en_core_web_sm.load()
@@ -63,11 +64,6 @@ def pos_verb(text):
     filter_spans(pos_v)
     return pos_v
 
-'''Summarization of lemmatized documents'''
-def summarizer(text):
-    text = lemmatization(text)
-    summarized_text = summarize(text, ratio = 0.2)
-    return summarized_text
 
 '''Compute the similarity between job description and resume using Cosine Similarity'''
 def similarity_caculator(text_resume, text_jd):
@@ -104,3 +100,37 @@ def keyword_matching(text_resume, text_jd):
     matcher_percentage = (matched_amount/jd_keyword_amount)*100
 
     return matcher_report, matcher_percentage
+
+'''Calculate the similarity and return a list of a certain amount of job with highest score'''
+def get_top_similarity(resume_content, jd_content_list, im_df):
+    max = 0
+    max_id = 0
+    rank = 1
+    top_dict = {}
+    id_list = []
+    # Get the rank and score of job description compare to resume
+    while(amount > 0):
+        for jd_content in jd_content_list:
+            similarity_score = tm.similarity_caculator(resume_content, jd_content)
+            if similarity_score > max:
+                max = similarity_score
+                max_id = jd_content_list.index(jd_content)
+        top_dict['Rank'] = rank
+        top_dict['Score']= max
+        id_list.append[max_id]
+        jd_content_list.pop[max_id]
+        amount -= 1
+        rank += 1
+    
+    top_df = pd.DataFrame(top_dict)
+    im_df = im_df.reset_index()
+    im_df_rs = pd.DataFrame()
+
+    for index, row in im_df.iterrows():
+        for id in id_list:
+            if id == index:
+                im_df_rs = im_df_rs.append(row, ignore_index = True)
+
+    frames = [top_df,im_df_rs]
+    result_df = pd.concat(frames)
+    return top_dict
