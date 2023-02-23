@@ -6,9 +6,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from spacy.matcher import PhraseMatcher, Matcher
 from spacy.util import filter_spans
 from collections import Counter
-from rake_nltk import Rake
+#from rake_nltk import Rake
 import en_core_web_sm
-import pandas
  
 # Load spaCy trained pipeline for english
 master = en_core_web_sm.load()
@@ -77,60 +76,28 @@ def similarity_caculator(text_resume, text_jd):
     return matchPercentage
 
 "Compute the phrase matching for raw text in resume and jd"
-def keyword_matching(text_resume, text_jd):
+def keyword_matching(text_resume, skill):
     # Generate matcher pattern by extracting keywords from job description
-    rake = Rake()
+    #rake = Rake()
     matcher = PhraseMatcher(master.vocab)
-    jd_keyword = rake.extract_keywords_from_text(text_resume)
-    jd_keyword_count = Counter(jd_keyword)
-    patterns = [master.make_doc(k) for k in jd_keyword]
-    matcher.add("Spec", patterns) 
+    skill = str(skill)
+    skill_list = skill.split(',')
+    skill_keyword_count = Counter(skill_list)
+    patterns = [master(k) for k in skill_list]
+    matcher.add("Skill pattern", patterns) 
 
     # Matching the keyword in job description with resume
     text_resume = master(text_resume)
     matches = matcher(text_resume)
-    match_keywords = [text_resume[start:end] for _, start, end in matches]
+    match_keywords = [text_resume[start:end] for match_id, start, end in matches]
 
     # Count the amount of word matched and matching frequency
     matcher_report = Counter(match_keywords)
 
     # Calculate the keyword matching percentage between job description and resume
     matched_amount = len(matcher_report.keys())
-    jd_keyword_amount = len(jd_keyword_count.keys())
-    matcher_percentage = (matched_amount/jd_keyword_amount)*100
+    skill_keyword_amount = len(skill_keyword_count.keys())
+    matcher_percentage = (matched_amount/skill_keyword_amount)*100
 
-    return matcher_report, matcher_percentage
+    return match_keywords, matcher_percentage
 
-'''Calculate the similarity and return a list of a certain amount of job with highest score'''
-def get_top_similarity(resume_content, jd_content_list, im_df):
-    max = 0
-    max_id = 0
-    rank = 1
-    top_dict = {}
-    id_list = []
-    # Get the rank and score of job description compare to resume
-    while(amount > 0):
-        for jd_content in jd_content_list:
-            similarity_score = tm.similarity_caculator(resume_content, jd_content)
-            if similarity_score > max:
-                max = similarity_score
-                max_id = jd_content_list.index(jd_content)
-        top_dict['Rank'] = rank
-        top_dict['Score']= max
-        id_list.append[max_id]
-        jd_content_list.pop[max_id]
-        amount -= 1
-        rank += 1
-    
-    top_df = pd.DataFrame(top_dict)
-    im_df = im_df.reset_index()
-    im_df_rs = pd.DataFrame()
-
-    for index, row in im_df.iterrows():
-        for id in id_list:
-            if id == index:
-                im_df_rs = im_df_rs.append(row, ignore_index = True)
-
-    frames = [top_df,im_df_rs]
-    result_df = pd.concat(frames)
-    return top_dict
