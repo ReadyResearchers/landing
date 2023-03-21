@@ -13,7 +13,7 @@ import PyPDF2
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
-
+pd.options.mode.chained_assignment = None
 
 nltk.download('punkt')
 st.set_page_config(
