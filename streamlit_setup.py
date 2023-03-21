@@ -47,8 +47,8 @@ def main():
         
 
         # Load job description file
-        df = pd.read_csv('dice_com_techjob_post.csv', index_col = 0)
-        im_df = pd.read_csv('skill_extracted_df.csv', index_col = 0)
+        df = pd.read_csv('./data/dice_com_techjob_post.csv', index_col = 0)
+        im_df = pd.read_csv('./data/skill_extracted_df.csv', index_col = 0)
         data_dict = im_df.to_dict()
         skills = [x for x in data_dict['Extracted Skills'].values()]
 
