@@ -68,15 +68,13 @@ def main():
         tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
 
         # generate k-cluster
-
         num_clusters = 26
-
         km = KMeans(n_clusters=num_clusters)
-
         km.fit(tfidf_matrix)
-
         clusters = km.predict(tfidf_matrix)
 
+        #add cluster name into the df
+        data_eval["ClusterName"] = clusters
         ## file upload in pdf format
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
@@ -102,10 +100,8 @@ def main():
                 except:
                     pass
                 st.subheader("Below is top 5 job matches your skills and info")
-
-                #add cluster name into the df
-                data_eval["ClusterName"] = clusters
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
+                st.text(cluster)
                 ind = []
                 for i in data_eval.index:
                     if int(data_eval["ClusterName"][i]) == int(cluster):
