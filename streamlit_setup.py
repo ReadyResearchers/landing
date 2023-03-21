@@ -36,15 +36,6 @@ def main():
     choice = st.sidebar.selectbox("Please select Home to know more about the project, Analyzer to analyze your resume and Feedback to give me some feedback:", activities)
 
     if choice == 'Analyzer':
-        # Collecting Miscellaneous Information
-        act_name = st.text_input('Please enter your name')
-        act_mail = st.text_input('Please enter your email')
-        seniority = st.text_input('Please enter your seniority level in tech')
-
-
-        # Upload Resume
-        st.markdown('''<h5 style='text-align: left; color: #021659;'> Upload Your Resume, And Get Smart Recommendations</h5>''',unsafe_allow_html=True)
-        
 
         # Load job description file
         df = pd.read_csv('./data/dice_com_techjob_post.csv', index_col = 0)
@@ -75,6 +66,16 @@ def main():
 
         #add cluster name into the df
         data_eval["ClusterName"] = clusters
+
+        # Collecting Miscellaneous Information
+        act_name = st.text_input('Please enter your name')
+        act_mail = st.text_input('Please enter your email')
+        seniority = st.text_input('Please enter your seniority level in tech')
+
+
+        # Upload Resume
+        st.markdown('''<h5 style='text-align: left; color: #021659;'> Upload Your Resume, And Get Smart Recommendations</h5>''',unsafe_allow_html=True)
+
         ## file upload in pdf format
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
@@ -140,6 +141,7 @@ def main():
                 # Return missing keyphrase from a job
                 for ind in max_ind:
                     st.text("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
+                    print("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
                     key = top_df['Extracted Skills'][ind]
                     key_list = [k.lower() for k in key.split(',')]
                     matched_key = top_df['KeywordMatched'][ind]
