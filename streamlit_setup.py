@@ -5,10 +5,17 @@ import streamlit as st
 from streamlit_tags import st_tags
 import base64
 from PIL import Image
-from resume_parser import resumeparse
 import time
 import pandas as pd
+import pandas as pd
+import nltk
+import PyPDF2
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
 
+
+nltk.download('punkt')
 st.set_page_config(
    page_title="Lander: A NLP-based Resume Analyzer",
    page_icon='image/lander.png',
@@ -38,44 +45,130 @@ def main():
         # Upload Resume
         st.markdown('''<h5 style='text-align: left; color: #021659;'> Upload Your Resume, And Get Smart Recommendations</h5>''',unsafe_allow_html=True)
         
+
+        # Load job description file
+        df = pd.read_csv('dice_com_techjob_post.csv', index_col = 0)
+        im_df = pd.read_csv('skill_extracted_df.csv', index_col = 0)
+        data_dict = im_df.to_dict()
+        skills = [x for x in data_dict['Extracted Skills'].values()]
+
+        # prepare a data frame of only skills and job title to train
+        col = ['jobtitle', 'Extracted Skills']
+        data_eval = im_df[col]
+
+        # Drop rows with missing data
+        data_eval.dropna(subset=['Extracted Skills'], inplace=True)
+        data_forfit = data_eval['Extracted Skills']
+        tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.01, use_idf=True, stop_words= 'english')
+        tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
+
+        # define vectorizer parameters
+        tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.001, use_idf=True, stop_words= 'english')
+
+        tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
+
+        # generate k-cluster
+
+        num_clusters = 26
+
+        km = KMeans(n_clusters=num_clusters)
+
+        km.fit(tfidf_matrix)
+
+        clusters = km.predict(tfidf_matrix)
+
         ## file upload in pdf format
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
             with st.spinner('...Please give us a second...'):
-                time.sleep(4)
-        
-            ### saving the uploaded resume to folder
-            uploaded_path = './Uploaded_resume/'+pdf_file.name
-            pdf_name = pdf_file.name
-            with open(uploaded_path, "wb") as f:
-                f.write(pdf_file.getbuffer())
-            show_pdf(uploaded_path)
+                time.sleep(2)
 
             ### parsing and extracting whole resume 
-            resume_data = resumeparse.read_file('uploaded_path')
-            if resume_data:
-                
-                ## Get the whole resume data into resume_text
-                resume_text = fh.load_data_pdf(uploaded_path)
+            pdfReader = PyPDF2.PdfReader(pdf_file)
+            page = pdfReader.pages[0]
+            content = page.extract_text()
+
+            if content:
 
                 ## Showing Analyzed data from (resume_data)
                 st.header("Here is your Resume report")
-                st.success("Hello "+ resume_data['name'])
+                st.success("Hello "+ act_name)
                 st.subheader("Below is your basic info")
                 try:
-                    st.text('Name: '+resume_data['name'])
-                    st.text('Email: ' + resume_data['email'])
-                    st.text('Contact: ' + resume_data['phone'])
-                    st.text('Degree: '+str(resume_data['degree']))                    
+                    st.text('Name: '+ act_name)
+                    st.text('Email: ' + act_mail)                    
                     st.text('Seniority Level: '+ seniority)
 
                 except:
                     pass
                 st.subheader("Below is top 5 job matches your skills and info")
-                #TODO: Intergrate cluster
+
+                #add cluster name into the df
+                data_eval["ClusterName"] = clusters
+                cluster = km.predict(tfidf_vectorizer.transform([content])) 
+                ind = []
+                for i in data_eval.index:
+                    if int(data_eval["ClusterName"][i]) == int(cluster):
+                        ind.append(i)
+                match_df = im_df.loc[ind]
+
+                scores = []
+                matches_kws = []
+                for ind in match_df.index:
+                    text_skill = match_df['Extracted Skills'][ind]
+                    text_skill_use = [k.lower() for k in text_skill.split(',')]
+                    matches_kw = tm.keyword_matching(content.lower(), text_skill_use)
+                    matches_kws.append(','.join(matches_kw))
+                    score = (len(matches_kw)/len(text_skill.split(',')))*100
+                    scores.append(score)
+
+                match_df['MatchingPercentage'] = pd.Series(scores)
+                match_df['KeywordMatched'] = pd.Series(matches_kws)
+                # Return top 5:
+                temp_df = match_df.copy()
+                top_df = match_df.copy()
+                amount = 5
+                max_ind = []
+                while(amount > 0):
+                    max = 0
+                    max_id = 0
+                    for ind in temp_df.index:
+                        if temp_df['MatchingPercentage'][ind] > max:
+                            max_id = ind
+                            max = temp_df['MatchingPercentage'][ind]
+
+                    max_ind.append(max_id)
+                    temp_df['MatchingPercentage'][max_id] = 0
+                    amount -= 1
                 
-                keywords = st_tags(label=' Your current skills are',
-                text='See our skills recommendation below',value=resume_data['skills'],key = '1  ')
+                # Return missing keyphrase from a job
+                for ind in max_ind:
+                    print('-------------------- Missing Key Phrase Report -------------------------------')
+                    print("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
+                    key = top_df['Extracted Skills'][ind]
+                    key_list = [k.lower() for k in key.split(',')]
+                    matched_key = top_df['KeywordMatched'][ind]
+                    matched_key_list = matched_key.split(',')
+                    print('List of every key skill in the job:', key)
+                    missing = []
+                    for kw in key_list:
+                        if kw not in matched_key_list:
+                            missing.append(kw)
+                    print()
+                    print(f'Matched key phrase: {matched_key}')
+                    print()
+                    i = 1
+                    for ms in missing:
+                        print(f'Top {i} missing phrase: {ms}')
+                        print()
+                        i += 1
+                        if i > 40:
+                            break
+                    print('---------------------------End of report--------------------------------------')
+                    print()
+                
+                #keywords = st_tags(label=' Your current skills are',
+                #text='See our skills recommendation below',value=resume_data['skills'],key = '1  ')
         elif choice == 'Home':   
 
             st.subheader("Lander: Together we shoot for the moon")

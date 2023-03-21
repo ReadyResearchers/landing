@@ -6,9 +6,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from spacy.matcher import PhraseMatcher, Matcher
 from spacy.util import filter_spans
 from collections import Counter
-#from rake_nltk import Rake
 import en_core_web_sm
- 
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 # Load spaCy trained pipeline for english
 master = en_core_web_sm.load()
 
@@ -78,26 +79,72 @@ def similarity_caculator(text_resume, text_jd):
 "Compute the phrase matching for raw text in resume and jd"
 def keyword_matching(text_resume, skill):
     # Generate matcher pattern by extracting keywords from job description
-    #rake = Rake()
     matcher = PhraseMatcher(master.vocab)
-    skill = str(skill)
-    skill_list = skill.split(',')
-    skill_keyword_count = Counter(skill_list)
-    patterns = [master(k) for k in skill_list]
+    patterns = [master(k) for k in skill]
     matcher.add("Skill pattern", patterns) 
 
     # Matching the keyword in job description with resume
     text_resume = master(text_resume)
     matches = matcher(text_resume)
-    match_keywords = [text_resume[start:end] for match_id, start, end in matches]
+    match_keywords = []
+
+    for match_id, start, end in matches:
+      kw = text_resume[start:end]
+      if kw.text not in match_keywords:
+        match_keywords.append(kw.text)
 
     # Count the amount of word matched and matching frequency
     matcher_report = Counter(match_keywords)
+   
 
-    # Calculate the keyword matching percentage between job description and resume
-    matched_amount = len(matcher_report.keys())
-    skill_keyword_amount = len(skill_keyword_count.keys())
-    matcher_percentage = (matched_amount/skill_keyword_amount)*100
+    return match_keywords
 
-    return match_keywords, matcher_percentage
 
+def cluster_name(prediction, data_eval):
+  labels = []
+  for cluster in prediction:
+    title_list = []
+    for i in data_eval.index:
+      if int(data_eval['ClusterName'][i]) == cluster:
+        for word in data_eval['jobtitle'][i].split(' '):
+          title_list.append(word)
+    occurence_count = Counter(title_list)
+    label = occurence_count.most_common(1)[0][0]
+    labels.append(label)
+  return labels
+
+def get_top_features_cluster(tf_idf_array, prediction, n_feats):
+    labels = np.unique(prediction)
+    dfs = []
+    for label in labels:
+        id_temp = np.where(prediction==label) # indices for each cluster
+        x_means = np.mean(tf_idf_array[id_temp], axis = 0) # returns average score across cluster
+        sorted_means = np.argsort(x_means)[::-1][:n_feats] # indices with top 20 scores
+        features = tfidf_vectorizer.get_feature_names_out()
+        best_features = [(features[i], x_means[i]) for i in sorted_means]
+        df = pd.DataFrame(best_features, columns = ['features', 'score'])
+        dfs.append(df)
+    return dfs
+
+def get_job(data_eval):
+
+  dict_job = {}
+
+  for ind in data_eval.index:
+    i = data_eval['ClusterName'][ind]
+    if i not in dict_job.keys():
+      dict_job[i] = []
+      dict_job[i].append(data_eval['jobtitle'][ind])
+    else:
+      dict_job[i].append(data_eval['jobtitle'][ind])
+  
+  return dict_job
+
+
+def plotWords(dfs, n_feats, data_eval):
+    job = get_job(data_eval)
+    for i in range(0,26):
+        plt.figure(figsize=(8, 2))
+        plt.title(("Most Common Words in Cluster {}".format(i)), fontsize=10, fontweight='bold')
+        sns.barplot(x = 'score' , y = 'features', orient = 'h' , data = dfs[i][:n_feats])
+        plt.figtext(0.99, - 0.2, f'Associated positions: {job[i][:3]}', horizontalalignment='right')
