@@ -143,29 +143,28 @@ def main():
                 
                 # Return missing keyphrase from a job
                 for ind in max_ind:
-                    print('-------------------- Missing Key Phrase Report -------------------------------')
-                    print("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
+                    st.text("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
                     key = top_df['Extracted Skills'][ind]
                     key_list = [k.lower() for k in key.split(',')]
                     matched_key = top_df['KeywordMatched'][ind]
                     matched_key_list = matched_key.split(',')
-                    print('List of every key skill in the job:', key)
+                    st.text('List of every key skill in the job:', key)
                     missing = []
                     for kw in key_list:
                         if kw not in matched_key_list:
                             missing.append(kw)
-                    print()
-                    print(f'Matched key phrase: {matched_key}')
-                    print()
+                    st.text()
+                    st.text(f'Matched key phrase: {matched_key}')
+                    st.text()
                     i = 1
                     for ms in missing:
-                        print(f'Top {i} missing phrase: {ms}')
-                        print()
+                        st.text(f'Top {i} missing phrase: {ms}')
+                        st.text()
                         i += 1
                         if i > 40:
                             break
-                    print('---------------------------End of report--------------------------------------')
-                    print()
+                    st.text('---------------------------End of report--------------------------------------')
+                    st.text()
                 
                 #keywords = st_tags(label=' Your current skills are',
                 #text='See our skills recommendation below',value=resume_data['skills'],key = '1  ')
