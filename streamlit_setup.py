@@ -40,8 +40,6 @@ def main():
         # Load job description file
         df = pd.read_csv('./data/dice_com_techjob_post.csv', index_col = 0)
         im_df = pd.read_csv('./data/skill_extracted_df.csv', index_col = 0)
-        data_dict = im_df.to_dict()
-        skills = [x for x in data_dict['Extracted Skills'].values()]
 
         # prepare a data frame of only skills and job title to train
         col = ['jobtitle', 'Extracted Skills']
@@ -108,7 +106,9 @@ def main():
                     if int(data_eval["ClusterName"][i]) == int(cluster):
                         ind.append(i)
                 match_df = im_df.loc[ind]
-
+                match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
+                st.write(match_df.head())
+                print(match_df.head())
                 scores = []
                 matches_kws = []
                 for ind in match_df.index:
@@ -121,6 +121,8 @@ def main():
 
                 match_df['MatchingPercentage'] = pd.Series(scores)
                 match_df['KeywordMatched'] = pd.Series(matches_kws)
+                st.write(match_df.head())
+                print(match_df.head())
                 # Return top 5:
                 temp_df = match_df.copy()
                 top_df = match_df.copy()

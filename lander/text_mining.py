@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 # Load spaCy trained pipeline for english
-master = en_core_web_sm.load()
+master = en_core_web_sm.load(disable=["tagger", "parser","ner"])
 
 '''Return lemmatized text for better handling later'''
 def lemmatization(text):
@@ -64,7 +64,6 @@ def pos_verb(text):
     filter_spans(pos_v)
     return pos_v
 
-
 '''Compute the similarity between job description and resume using Cosine Similarity'''
 def similarity_caculator(text_resume, text_jd):
     text_resume = lemmatization(text_resume)
@@ -92,9 +91,6 @@ def keyword_matching(text_resume, skill):
       kw = text_resume[start:end]
       if kw.text not in match_keywords:
         match_keywords.append(kw.text)
-
-    # Count the amount of word matched and matching frequency
-    matcher_report = Counter(match_keywords)
    
 
     return match_keywords
