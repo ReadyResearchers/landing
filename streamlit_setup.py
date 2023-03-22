@@ -14,9 +14,6 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 pd.options.mode.chained_assignment = None
-# Two global data frame holding loaded database
-global df
-global im_df
 
 st.set_page_config(
    page_title="Lander: A NLP-based Resume Analyzer",
@@ -25,7 +22,7 @@ st.set_page_config(
 
 '''Function to slice the dataframe into given cluster'''
 @st.cache_data
-def strip_cluster(data_eval, cluster):
+def strip_cluster(data_eval, cluster, im_df):
     ind = []
     for i in data_eval.index:
         if int(data_eval["ClusterName"][i]) == int(cluster):
@@ -34,8 +31,8 @@ def strip_cluster(data_eval, cluster):
     return match_df
 
 @st.cache_data
-def match_score(data_eval, cluster, content):
-    match_df = strip_cluster(data_eval, cluster)
+def match_score(data_eval, cluster, content, im_df):
+    match_df = strip_cluster(data_eval, cluster, im_df)
     match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
     scores = []
     matches_kws = []
@@ -123,7 +120,7 @@ def main():
                 st.text(cluster)
 
                 # Put all rows having matched cluster into a new dataframe with matching score
-                match_df = match_score(data_eval, cluster, content)
+                match_df = match_score(data_eval, cluster, content, im_df)
                 
                 # Return top 5:
                 temp_df = match_df.copy()
