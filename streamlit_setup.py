@@ -15,7 +15,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 pd.options.mode.chained_assignment = None
 
-nltk.download('punkt')
 st.set_page_config(
    page_title="Lander: A NLP-based Resume Analyzer",
    page_icon='image/lander.png',
@@ -48,8 +47,6 @@ def main():
         # Drop rows with missing data
         data_eval.dropna(subset=['Extracted Skills'], inplace=True)
         data_forfit = data_eval['Extracted Skills']
-        tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.01, use_idf=True, stop_words= 'english')
-        tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
 
         # define vectorizer parameters
         tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.001, use_idf=True, stop_words= 'english')
@@ -77,9 +74,8 @@ def main():
         ## file upload in pdf format
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
-            with st.spinner('...Please give us a second...'):
-                time.sleep(2)
-
+            show_pdf(pdf_file)
+	
             ### parsing and extracting whole resume 
             pdfReader = PyPDF2.PdfReader(pdf_file)
             page = pdfReader.pages[0]
@@ -121,8 +117,7 @@ def main():
 
                 match_df['MatchingPercentage'] = pd.Series(scores)
                 match_df['KeywordMatched'] = pd.Series(matches_kws)
-                st.write(match_df.head())
-                print(match_df.head())
+                
                 # Return top 5:
                 temp_df = match_df.copy()
                 top_df = match_df.copy()
@@ -142,29 +137,28 @@ def main():
                 
                 # Return missing keyphrase from a job
                 for ind in max_ind:
-                    st.text("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
-                    print("Report of missing key phrase for job: ", top_df['jobtitle'][ind])
+                    st.text(f"Report of missing key phrase for job: {top_df['jobtitle'][ind]}")
                     key = top_df['Extracted Skills'][ind]
                     key_list = [k.lower() for k in key.split(',')]
                     matched_key = top_df['KeywordMatched'][ind]
                     matched_key_list = matched_key.split(',')
-                    st.text('List of every key skill in the job:', key)
+                    st.text(f'List of every key skill in the job {key}')
                     missing = []
                     for kw in key_list:
                         if kw not in matched_key_list:
                             missing.append(kw)
-                    st.text()
+                    st.text(" ")
                     st.text(f'Matched key phrase: {matched_key}')
-                    st.text()
+                    st.text(" ")
                     i = 1
                     for ms in missing:
                         st.text(f'Top {i} missing phrase: {ms}')
-                        st.text()
+                        st.text(" ")
                         i += 1
                         if i > 40:
                             break
                     st.text('---------------------------End of report--------------------------------------')
-                    st.text()
+                    st.text(" ")
                 
                 #keywords = st_tags(label=' Your current skills are',
                 #text='See our skills recommendation below',value=resume_data['skills'],key = '1  ')
