@@ -10,6 +10,7 @@ import en_core_web_sm
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import pandas as pd
 # Load spaCy trained pipeline for english
 master = en_core_web_sm.load(disable=["tagger", "parser","ner"])
 
@@ -66,8 +67,6 @@ def pos_verb(text):
 
 '''Compute the similarity between job description and resume using Cosine Similarity'''
 def similarity_caculator(text_resume, text_jd):
-    text_resume = lemmatization(text_resume)
-    text_jd = lemmatization(text_jd)
     text_list = [text_resume, text_jd]
     cv = CountVectorizer()
     count_vector = cv.fit_transform(text_list)
@@ -109,7 +108,7 @@ def cluster_name(prediction, data_eval):
     labels.append(label)
   return labels
 
-def get_top_features_cluster(tf_idf_array, prediction, n_feats):
+def get_top_features_cluster(tf_idf_array, prediction, n_feats, tfidf_vectorizer):
     labels = np.unique(prediction)
     dfs = []
     for label in labels:

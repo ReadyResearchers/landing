@@ -30,10 +30,24 @@ def strip_cluster(data_eval, cluster, im_df):
     match_df = im_df.loc[ind]
     return match_df
 
+'''Caculate similarity score using cosine similarity, take top 100'''
 @st.cache_data
-def match_score(data_eval, cluster, content, im_df):
+def match_score_cs(match_df, content):
+    similarityscore = []
+    for ind in match_df.index:
+        score = tm.similarity_caculator(content, match_df['jobdescription'][ind])
+        similarityscore.append(score)
+    match_df['SimilarityScore'] = pd.Series(similarityscore)
+    temp_df1 = match_df.copy()
+    temp_df1 = temp_df1.sort_values('SimilarityScore', ascending=False)
+    temp_df1 = temp_df1.iloc[:100]
+    return temp_df1
+
+@st.cache_data
+def match_score_pm(data_eval, cluster, content, im_df):
     match_df = strip_cluster(data_eval, cluster, im_df)
     match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
+    match_df = match_score_cs(match_df, content)
     scores = []
     matches_kws = []
     for ind in match_df.index:
@@ -117,30 +131,18 @@ def main():
                     pass
                 st.subheader("Below is top 5 job matches your skills and info")
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
+
                 st.text(cluster)
 
                 # Put all rows having matched cluster into a new dataframe with matching score
-                match_df = match_score(data_eval, cluster, content, im_df)
+                match_df = match_score_pm(data_eval, cluster, content, im_df)
                 
                 # Return top 5:
-                temp_df = match_df.copy()
-                top_df = match_df.copy()
-                amount = 5
-                max_ind = []
-                while(amount > 0):
-                    max = 0
-                    max_id = 0
-                    for ind in temp_df.index:
-                        if temp_df['MatchingPercentage'][ind] > max:
-                            max_id = ind
-                            max = temp_df['MatchingPercentage'][ind]
-
-                    max_ind.append(max_id)
-                    temp_df['MatchingPercentage'][max_id] = 0
-                    amount -= 1
+                match_df = match_df.sort_values('MatchingPercentage', ascending=False)
+                top_df = match_df.iloc[:5]
                 
                 # Return missing keyphrase from a job
-                for ind in max_ind:
+                for ind in top_df.index:
                     st.text(f"Report of missing key phrase for job: {top_df['jobtitle'][ind]}")
                     key = top_df['Extracted Skills'][ind]
                     key_list = [k.lower() for k in key.split(',')]
