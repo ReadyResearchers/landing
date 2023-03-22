@@ -14,17 +14,42 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 pd.options.mode.chained_assignment = None
+# Two global data frame holding loaded database
+global df
+global im_df
 
 st.set_page_config(
    page_title="Lander: A NLP-based Resume Analyzer",
    page_icon='image/lander.png',
 )
 
-def show_pdf(file_path):
-    with open(file_path, "rb") as f:
-        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-    pdf_display = F'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
-    st.markdown(pdf_display, unsafe_allow_html=True)
+'''Function to slice the dataframe into given cluster'''
+@st.cache_data
+def strip_cluster(data_eval, cluster):
+    ind = []
+    for i in data_eval.index:
+        if int(data_eval["ClusterName"][i]) == int(cluster):
+            ind.append(i)
+    match_df = im_df.loc[ind]
+    return match_df
+
+@st.cache_data
+def match_score(data_eval, cluster, content):
+    match_df = strip_cluster(data_eval, cluster)
+    match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
+    scores = []
+    matches_kws = []
+    for ind in match_df.index:
+        text_skill = match_df['Extracted Skills'][ind]
+        text_skill_use = [k.lower() for k in text_skill.split(',')]
+        matches_kw = tm.keyword_matching(content.lower(), text_skill_use)
+        matches_kws.append(','.join(matches_kw))
+        score = (len(matches_kw)/len(text_skill.split(',')))*100
+        scores.append(score)
+
+    match_df['MatchingPercentage'] = pd.Series(scores)
+    match_df['KeywordMatched'] = pd.Series(matches_kws)
+    return match_df
 
 def main():
     # (Logo, Heading, Sidebar etc)
@@ -37,6 +62,7 @@ def main():
     if choice == 'Analyzer':
 
         # Load job description file
+        
         df = pd.read_csv('./data/dice_com_techjob_post.csv', index_col = 0)
         im_df = pd.read_csv('./data/skill_extracted_df.csv', index_col = 0)
 
@@ -74,8 +100,6 @@ def main():
         ## file upload in pdf format
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
-            show_pdf(pdf_file)
-	
             ### parsing and extracting whole resume 
             pdfReader = PyPDF2.PdfReader(pdf_file)
             page = pdfReader.pages[0]
@@ -97,26 +121,9 @@ def main():
                 st.subheader("Below is top 5 job matches your skills and info")
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
                 st.text(cluster)
-                ind = []
-                for i in data_eval.index:
-                    if int(data_eval["ClusterName"][i]) == int(cluster):
-                        ind.append(i)
-                match_df = im_df.loc[ind]
-                match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
-                st.write(match_df.head())
-                print(match_df.head())
-                scores = []
-                matches_kws = []
-                for ind in match_df.index:
-                    text_skill = match_df['Extracted Skills'][ind]
-                    text_skill_use = [k.lower() for k in text_skill.split(',')]
-                    matches_kw = tm.keyword_matching(content.lower(), text_skill_use)
-                    matches_kws.append(','.join(matches_kw))
-                    score = (len(matches_kw)/len(text_skill.split(',')))*100
-                    scores.append(score)
 
-                match_df['MatchingPercentage'] = pd.Series(scores)
-                match_df['KeywordMatched'] = pd.Series(matches_kws)
+                # Put all rows having matched cluster into a new dataframe with matching score
+                match_df = match_score(data_eval, cluster, content)
                 
                 # Return top 5:
                 temp_df = match_df.copy()
