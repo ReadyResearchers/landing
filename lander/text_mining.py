@@ -86,7 +86,7 @@ def keyword_matching(text_resume, skill):
     matches = matcher(text_resume)
     match_keywords = []
 
-    for match_id, start, end in matches:
+    for _, start, end in matches:
       kw = text_resume[start:end]
       if kw.text not in match_keywords:
         match_keywords.append(kw.text)
@@ -136,10 +136,10 @@ def get_job(data_eval):
   return dict_job
 
 
-def plotWords(dfs, n_feats, data_eval):
+def plotWords(dfs, n_feats, data_eval, i):
     job = get_job(data_eval)
-    for i in range(0,26):
-        plt.figure(figsize=(8, 2))
-        plt.title(("Most Common Words in Cluster {}".format(i)), fontsize=10, fontweight='bold')
-        sns.barplot(x = 'score' , y = 'features', orient = 'h' , data = dfs[i][:n_feats])
-        plt.figtext(0.99, - 0.2, f'Associated positions: {job[i][:3]}', horizontalalignment='right')
+    fig = plt.figure(figsize=(8, 2))
+    plt.title(("Most Common Words in Cluster {}".format(i)), fontsize=10, fontweight='bold')
+    sns.barplot(x = 'score' , y = 'features', orient = 'h' , data = dfs[i][:n_feats])
+    plt.figtext(0.99, - 0.2, f'Associated positions: {job[i][:3]}', horizontalalignment='right')
+    return fig

@@ -11,6 +11,7 @@ import pandas as pd
 import nltk
 import PyPDF2
 from nltk.corpus import stopwords
+import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 pd.options.mode.chained_assignment = None
@@ -20,9 +21,10 @@ st.set_page_config(
    page_icon='image/lander.png',
 )
 
-'''Function to slice the dataframe into given cluster'''
+
 @st.cache_data
 def strip_cluster(data_eval, cluster, im_df):
+    '''Function to slice the dataframe into given cluster'''
     ind = []
     for i in data_eval.index:
         if int(data_eval["ClusterName"][i]) == int(cluster):
@@ -30,9 +32,9 @@ def strip_cluster(data_eval, cluster, im_df):
     match_df = im_df.loc[ind]
     return match_df
 
-'''Caculate similarity score using cosine similarity, take top 100'''
 @st.cache_data
 def match_score_cs(match_df, content):
+    '''Caculate similarity score using cosine similarity, take top 100'''
     similarityscore = []
     for ind in match_df.index:
         score = tm.similarity_caculator(content, match_df['jobdescription'][ind])
@@ -43,12 +45,12 @@ def match_score_cs(match_df, content):
     temp_df1 = temp_df1.iloc[:100]
     return temp_df1
 
-
-'''Caculate similarity score using Phrase Matcher'''
 @st.cache_data
-def match_score_pm(data_eval, cluster, content, im_df):
+def match_score_pm(data_eval, cluster, content, im_df, seniority):
+    '''Caculate similarity score using Phrase Matcher'''
     match_df = strip_cluster(data_eval, cluster, im_df)
-    match_df = match_df[match_df["jobtitle"].str.contains("Senior" or "Sr" or "senior") == False]
+    if seniority.lower() in ['junior' or 'jr' or 'entry']:
+        match_df = match_df[match_df["jobtitle"].str.contains("Senior|Sr|senior|Manager|Principal") == False]
     match_df = match_score_cs(match_df, content)
     scores = []
     matches_kws = []
@@ -68,41 +70,41 @@ def main():
     img = Image.open('image/lander.png')
     st.image(img)
     st.sidebar.markdown("...Please Choose Something...")
-    activities = ["Home", "Analyzer", "Feedback"]
-    choice = st.sidebar.selectbox("Please select Home to know more about the project, Analyzer to analyze your resume and Feedback to give me some feedback:", activities)
+    activities = ["Home", "Analyzer", "Database"]
+    choice = st.sidebar.selectbox("Please select: Home to know more about the project" 
+                                    + "\n Analyzer to analyze your resume" 
+                                    + "\n Database to learn more about the dataset and download it if you need", activities)
+    im_df = pd.read_csv('./data/skill_extracted_df.csv', index_col = 0)
+
+    # prepare a data frame of only skills and job title to train
+    col = ['jobtitle', 'Extracted Skills']
+    data_eval = im_df[col]
+
+    # Drop rows with missing data
+    data_eval.dropna(subset=['Extracted Skills'], inplace=True)
+    data_forfit = data_eval['Extracted Skills']
+
+    # define vectorizer parameters
+    tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.001, use_idf=True, stop_words= 'english')
+
+    tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
+
+    # generate k-cluster
+    num_clusters = 26
+    km = KMeans(n_clusters=num_clusters)
+    km.fit(tfidf_matrix)
+    clusters = km.predict(tfidf_matrix)
+
+    #add cluster name into the df
+    data_eval["ClusterName"] = clusters
 
     if choice == 'Analyzer':
 
         # Load job description file
         
-        df = pd.read_csv('./data/dice_com_techjob_post.csv', index_col = 0)
-        im_df = pd.read_csv('./data/skill_extracted_df.csv', index_col = 0)
-
-        # prepare a data frame of only skills and job title to train
-        col = ['jobtitle', 'Extracted Skills']
-        data_eval = im_df[col]
-
-        # Drop rows with missing data
-        data_eval.dropna(subset=['Extracted Skills'], inplace=True)
-        data_forfit = data_eval['Extracted Skills']
-
-        # define vectorizer parameters
-        tfidf_vectorizer = TfidfVectorizer(sublinear_tf = True, min_df = 0.001, use_idf=True, stop_words= 'english')
-
-        tfidf_matrix = tfidf_vectorizer.fit_transform(data_forfit)
-
-        # generate k-cluster
-        num_clusters = 26
-        km = KMeans(n_clusters=num_clusters)
-        km.fit(tfidf_matrix)
-        clusters = km.predict(tfidf_matrix)
-
-        #add cluster name into the df
-        data_eval["ClusterName"] = clusters
-
+        
         # Collecting Miscellaneous Information
         act_name = st.text_input('Please enter your name')
-        act_mail = st.text_input('Please enter your email')
         seniority = st.text_input('Please enter your seniority level in tech')
 
 
@@ -122,8 +124,7 @@ def main():
                 st.success("Hello "+ act_name)
                 st.subheader("Below is your basic info")
                 try:
-                    st.text('Name: '+ act_name)
-                    st.text('Email: ' + act_mail)                    
+                    st.text('Name: '+ act_name)                  
                     st.text('Seniority Level: '+ seniority)
 
                 except:
@@ -133,35 +134,37 @@ def main():
                 st.subheader("Below is top 5 job matches your skills and info")
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
 
-                st.text(cluster)
-
                 # Put all rows having matched cluster into a new dataframe with matching score
-                match_df = match_score_pm(data_eval, cluster, content, im_df)
+                match_df = match_score_pm(data_eval, cluster, content, im_df, seniority)
                 
                 # Return top 5:
                 match_df = match_df.sort_values('MatchingPercentage', ascending=False)
                 top_df = match_df.iloc[:5]
                 
                 # Return missing keyphrase from a job
+                x = 1
+                y = 10
                 for ind in top_df.index:
-                    with st.section(label=f"Your resume is suitable to: {top_df['Extracted Skills'][ind]}"):
-                        st.text(f"Report of missing key phrase for job: {top_df['jobtitle'][ind]}")
-                        key = top_df['Extracted Skills'][ind]
-                        key_list = [k.lower() for k in key.split(',')]
-                        matched_key = top_df['KeywordMatched'][ind]
-                        matched_key_list = matched_key.split(',')
-                        st.text(f'List of every key skill in the job {key}')
-                        missing = []
-                        for kw in key_list:
-                            if kw not in matched_key_list:
-                                missing.append(kw)
-                        keywords = st_tags(label=' Your matched skills with this job are',
-                        text='See our skills recommendation below',value=matched_key_list,key = '1  ')
-                        recommended_keywords = st_tags(label='### Recommended skills for you to boost chance with this job title',
-                        text='Recommended skills generated from System',value= missing,key = '2')
-                        st.markdown('''<h5 style='text-align: left; color: #1ed760;'>Adding this skills to resume will boost🚀 the chances of getting a Job</h5>''',unsafe_allow_html=True)
-                        with st.section(label="Click to view Job Description"):
-                            st.text(top_df['jobdescription'][ind])
+                    st.success("🎆 Your skills is matched to " + top_df['jobtitle'][ind] + " 🎆")
+                    key = top_df['Extracted Skills'][ind]
+                    key_list = [k.lower() for k in key.split(',')]
+                    matched_key = str(top_df['KeywordMatched'][ind])
+                    matched_key_list = matched_key.split(',')
+                    missing = []
+                    for kw in key_list:
+                        if kw not in matched_key_list:
+                            missing.append(kw)
+                    st_tags(label=' Your matched skills with this job are',
+                    text='See our skills recommendation below',value=matched_key_list,key = x)
+                    st_tags(label='### Recommended skills for you to boost chance with this job title',
+                    text='Recommended skills generated from System',value= missing, key = y)
+                    st.markdown('''<h5 style='text-align: left; color: #1ed760;'>Adding this skills to resume will boost🚀 the chances of getting a Job</h5>''',unsafe_allow_html=True)
+                    x += 1
+                    y += 1
+                    with st.expander(label="Click to display Job Description"):
+                        st.text(top_df['jobdescription'][ind])
+                        
+                    
     
     elif choice == 'Home':   
 
@@ -181,4 +184,23 @@ def main():
         </p><br/><br/>
      
         ''',unsafe_allow_html=True)  
+    elif choice == "Database":
+        option = ['Download Database', "Cluster Plotting"]
+        choice1 = st.selectbox(
+            'What action do you want to choose', option)
+        if choice1 == 'Download Database':
+            st.subheader("You can download Lander's job and skills dataset below")
+            with open("./data/skill_extracted_df.csv", "rb") as file:
+                st.download_button(
+                label="Download database",
+                data=file,
+                file_name="lander_skill_extracted_df.csv",
+                mime="text/csv"
+                )
+            st.success("Now you can do something with this database!!!")
+        elif choice1 == "Cluster Plotting":
+            st.subheader("Preview top keyword in each clusters with relevant job titles")
+            dfs = tm.get_top_features_cluster(tfidf_matrix.toarray(), clusters, 6, tfidf_vectorizer)
+            for i in range(0,26):
+                st.pyplot(tm.plotWords(dfs, 6, data_eval, i))
 main()
