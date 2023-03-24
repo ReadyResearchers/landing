@@ -48,12 +48,9 @@ for skill in extra_skill_list:
     skills_cleaned.append(skill)
 
 '''Method to extract keyword'''
-def keyword_matching(text_jd, text_skill):
+def keyword_extracting(text_jd, text_skill):
     # Generate matcher pattern by extracting keywords from job description
-    rake = Rake()
     matcher = PhraseMatcher(master.vocab)
-    #rake.extract_keywords_from_text(text_jd)
-    #jd_keyword = rake.get_ranked_phrases()
     patterns = [master.make_doc(k) for k in text_skill]
     matcher.add("Spec", patterns) 
 
@@ -61,21 +58,20 @@ def keyword_matching(text_jd, text_skill):
     text_jd = master(text_jd)
     matches = matcher(text_jd)
 
-    match_keywords = []
+    match_skill = []
     for match_id, start, end in matches:
         kw = text_jd[start:end]
-        if kw.text not in match_keywords:
-          match_keywords.append(kw.text)
+        if kw.text not in match_skill:
+          match_skill.append(kw.text)
 
-    return match_keywords
+    return match_skill
 
 scores = []
 matches_kws = []
 
 for ind in im_df.index:
   text_jd = im_df['jobdescription'][ind]
-  matches_kw = keyword_matching(text_jd, 
-  skills_cleaned)
+  matches_kw = keyword_extracting(text_jd, skills_cleaned)
   matches_kws.append(','.join(matches_kw))
 
 im_df['Extracted Skills'] = pd.Series(matches_kws)

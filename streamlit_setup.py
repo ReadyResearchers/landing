@@ -43,6 +43,8 @@ def match_score_cs(match_df, content):
     temp_df1 = temp_df1.iloc[:100]
     return temp_df1
 
+
+'''Caculate similarity score using Phrase Matcher'''
 @st.cache_data
 def match_score_pm(data_eval, cluster, content, im_df):
     match_df = strip_cluster(data_eval, cluster, im_df)
@@ -63,7 +65,6 @@ def match_score_pm(data_eval, cluster, content, im_df):
     return match_df
 
 def main():
-    # (Logo, Heading, Sidebar etc)
     img = Image.open('image/lander.png')
     st.image(img)
     st.sidebar.markdown("...Please Choose Something...")
@@ -112,9 +113,7 @@ def main():
         pdf_file = st.file_uploader("Please upload your Resume", type=["pdf"])
         if pdf_file is not None:
             ### parsing and extracting whole resume 
-            pdfReader = PyPDF2.PdfReader(pdf_file)
-            page = pdfReader.pages[0]
-            content = page.extract_text()
+            content = fh.load_data_pdf(pdf_file)
 
             if content:
 
@@ -129,6 +128,8 @@ def main():
 
                 except:
                     pass
+                
+
                 st.subheader("Below is top 5 job matches your skills and info")
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
 
@@ -143,47 +144,41 @@ def main():
                 
                 # Return missing keyphrase from a job
                 for ind in top_df.index:
-                    st.text(f"Report of missing key phrase for job: {top_df['jobtitle'][ind]}")
-                    key = top_df['Extracted Skills'][ind]
-                    key_list = [k.lower() for k in key.split(',')]
-                    matched_key = top_df['KeywordMatched'][ind]
-                    matched_key_list = matched_key.split(',')
-                    st.text(f'List of every key skill in the job {key}')
-                    missing = []
-                    for kw in key_list:
-                        if kw not in matched_key_list:
-                            missing.append(kw)
-                    st.text(" ")
-                    st.text(f'Matched key phrase: {matched_key}')
-                    st.text(" ")
-                    i = 1
-                    for ms in missing:
-                        st.text(f'Top {i} missing phrase: {ms}')
-                        st.text(" ")
-                        i += 1
-                        if i > 40:
-                            break
-                    st.text('---------------------------End of report--------------------------------------')
-                    st.text(" ")
-                
-                #keywords = st_tags(label=' Your current skills are',
-                #text='See our skills recommendation below',value=resume_data['skills'],key = '1  ')
-        elif choice == 'Home':   
+                    with st.section(label=f"Your resume is suitable to: {top_df['Extracted Skills'][ind]}"):
+                        st.text(f"Report of missing key phrase for job: {top_df['jobtitle'][ind]}")
+                        key = top_df['Extracted Skills'][ind]
+                        key_list = [k.lower() for k in key.split(',')]
+                        matched_key = top_df['KeywordMatched'][ind]
+                        matched_key_list = matched_key.split(',')
+                        st.text(f'List of every key skill in the job {key}')
+                        missing = []
+                        for kw in key_list:
+                            if kw not in matched_key_list:
+                                missing.append(kw)
+                        keywords = st_tags(label=' Your matched skills with this job are',
+                        text='See our skills recommendation below',value=matched_key_list,key = '1  ')
+                        recommended_keywords = st_tags(label='### Recommended skills for you to boost chance with this job title',
+                        text='Recommended skills generated from System',value= missing,key = '2')
+                        st.markdown('''<h5 style='text-align: left; color: #1ed760;'>Adding this skills to resume will boost🚀 the chances of getting a Job</h5>''',unsafe_allow_html=True)
+                        with st.section(label="Click to view Job Description"):
+                            st.text(top_df['jobdescription'][ind])
+    
+    elif choice == 'Home':   
 
-            st.subheader("Lander: Together we shoot for the moon")
+        st.subheader("Lander: Together we shoot for the moon")
 
-            st.markdown('''
-            <p align='justify'>
-                A text-mining based tool to help student with finding the most compatible job post based on their past experiences and interesrs as well as optimizing their resume by a keyword suggesting system.
-            </p>
-            <p align="justify">
-                <b>How to use it: -</b> <br/><br/>
-                <b>Analyzer -</b> <br/>
-                In the Side Bar select Analyzer option to start the process by filling out the required fields and uploading your resume in pdf format.<br/>
-                Just sit back and relax our tool will do the magic on it's own.<br/><br/>
-                <b>Feedback -</b> <br/>
-                A place where user can suggest some feedback about the tool.<br/><br/>
-            </p><br/><br/>
+        st.markdown('''
+        <p align='justify'>
+            A text-mining based tool to help student with finding the most compatible job post based on their past experiences and interesrs as well as optimizing their resume by a keyword suggesting system.
+        </p>
+        <p align="justify">
+        <b>How to use it: -</b> <br/><br/>
+        <b>Analyzer -</b> <br/>
+            In the Side Bar select Analyzer option to start the process by filling out the required fields and uploading your resume in pdf format.<br/>
+            Just sit back and relax our tool will do the magic on it's own.<br/><br/>
+        <b>Feedback -</b> <br/>
+            A place where user can suggest some feedback about the tool.<br/><br/>
+        </p><br/><br/>
      
         ''',unsafe_allow_html=True)  
 main()

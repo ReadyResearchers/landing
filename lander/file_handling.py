@@ -20,11 +20,10 @@ def load_data_dictionary(df):
     return data_dict
 
 '''Extract text from PDF file'''
-def load_data_pdf(path):
-    fileOb = open(path,'rb')
-    pdfReader = PyPDF2.PdfFileReader(fileOb)
-    page = pdfReader.getPage(0)
-    content = page.extractText()
+def load_data_pdf(pdf_file):
+    pdfReader = PyPDF2.PdfReader(pdf_file)
+    page = pdfReader.pages[0]
+    content = page.extract_text()
     return content
 
 def load_data_other(path):
