@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 pd.options.mode.chained_assignment = None
 
 st.set_page_config(
-   page_title="Lander: A NLP-based Resume Analyzer",
+   page_title="Lander",
    page_icon='image/lander.png',
 )
 
@@ -41,30 +41,35 @@ def match_score_cs(match_df, content):
         similarityscore.append(score)
     match_df['SimilarityScore'] = pd.Series(similarityscore)
     temp_df1 = match_df.copy()
-    temp_df1 = temp_df1.sort_values('SimilarityScore', ascending=False)
-    temp_df1 = temp_df1.iloc[:100]
-    return temp_df1
+    temp_df = temp_df1.sort_values('SimilarityScore', ascending=False)
+    temp_df = temp_df.iloc[:100]
+    return temp_df
 
 @st.cache_data
 def match_score_pm(data_eval, cluster, content, im_df, seniority):
     '''Caculate similarity score using Phrase Matcher'''
-    match_df = strip_cluster(data_eval, cluster, im_df)
+    pre_match_df = strip_cluster(data_eval, cluster, im_df)
     if seniority.lower() in ['junior' or 'jr' or 'entry']:
-        match_df = match_df[match_df["jobtitle"].str.contains("Senior|Sr|senior|Manager|Principal") == False]
-    match_df = match_score_cs(match_df, content)
+        pre_match_df = pre_match_df[pre_match_df["jobtitle"].str.contains("Senior|Sr|senior|Manager|Principal") == False]
+    match_df = match_score_cs(pre_match_df, content)
     scores = []
     matches_kws = []
     for ind in match_df.index:
-        text_skill = match_df['Extracted Skills'][ind]
+        text_skill = str(match_df['Extracted Skills'][ind])
         text_skill_use = [k.lower() for k in text_skill.split(',')]
         matches_kw = tm.keyword_matching(content.lower(), text_skill_use)
         matches_kws.append(','.join(matches_kw))
-        score = (len(matches_kw)/len(text_skill.split(',')))*100
+        score = (len(matches_kw)/len(text_skill_use))*100
         scores.append(score)
 
     match_df['MatchingPercentage'] = pd.Series(scores)
     match_df['KeywordMatched'] = pd.Series(matches_kws)
-    return match_df
+
+    # Return top 5 matches
+    match_df = match_df.sort_values('MatchingPercentage', ascending=False)
+    top_df = match_df.iloc[:5]
+    
+    return top_df
 
 def main():
     img = Image.open('image/lander.png')
@@ -135,17 +140,13 @@ def main():
                 cluster = km.predict(tfidf_vectorizer.transform([content])) 
 
                 # Put all rows having matched cluster into a new dataframe with matching score
-                match_df = match_score_pm(data_eval, cluster, content, im_df, seniority)
-                
-                # Return top 5:
-                match_df = match_df.sort_values('MatchingPercentage', ascending=False)
-                top_df = match_df.iloc[:5]
+                top_df = match_score_pm(data_eval, cluster, content, im_df, seniority)
                 
                 # Return missing keyphrase from a job
                 x = 1
                 y = 10
                 for ind in top_df.index:
-                    st.success("🎆 Your skills is matched to " + top_df['jobtitle'][ind] + " 🎆")
+                    st.success("🎆 Your skills is matched to " + top_df['jobtitle'][ind] + " at " + top_df['company'][ind] + " 🎆")
                     key = top_df['Extracted Skills'][ind]
                     key_list = [k.lower() for k in key.split(',')]
                     matched_key = str(top_df['KeywordMatched'][ind])
@@ -155,14 +156,15 @@ def main():
                         if kw not in matched_key_list:
                             missing.append(kw)
                     st_tags(label=' Your matched skills with this job are',
-                    text='See our skills recommendation below',value=matched_key_list,key = x)
+                            text='See our skills recommendation below',value=matched_key_list,key = x)
                     st_tags(label='### Recommended skills for you to boost chance with this job title',
-                    text='Recommended skills generated from System',value= missing, key = y)
+                            text='Recommended skills generated from System',value= missing, key = y)
                     st.markdown('''<h5 style='text-align: left; color: #1ed760;'>Adding this skills to resume will boost🚀 the chances of getting a Job</h5>''',unsafe_allow_html=True)
+                    with st.expander(label="Click to display Job Description"):
+                        st.markdown(top_df['jobdescription'][ind])
                     x += 1
                     y += 1
-                    with st.expander(label="Click to display Job Description"):
-                        st.text(top_df['jobdescription'][ind])
+                    
                         
                     
     
@@ -175,12 +177,11 @@ def main():
             A text-mining based tool to help student with finding the most compatible job post based on their past experiences and interesrs as well as optimizing their resume by a keyword suggesting system.
         </p>
         <p align="justify">
-        <b>How to use it: -</b> <br/><br/>
         <b>Analyzer -</b> <br/>
             In the Side Bar select Analyzer option to start the process by filling out the required fields and uploading your resume in pdf format.<br/>
             Just sit back and relax our tool will do the magic on it's own.<br/><br/>
-        <b>Feedback -</b> <br/>
-            A place where user can suggest some feedback about the tool.<br/><br/>
+        <b>Database -</b> <br/>
+            A place where user can explore and download Lander's skills database.<br/><br/>
         </p><br/><br/>
      
         ''',unsafe_allow_html=True)  

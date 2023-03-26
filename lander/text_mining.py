@@ -12,7 +12,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 # Load spaCy trained pipeline for english
-master = en_core_web_sm.load(disable=["tagger", "parser","ner"])
+master = en_core_web_sm.load(disable=["parser","ner"])
 
 '''Return lemmatized text for better handling later'''
 def lemmatization(text):
